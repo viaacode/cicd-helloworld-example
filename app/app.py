@@ -1,10 +1,15 @@
 from litestar import Litestar, get
+from viaa.configuration import ConfigParser
 
 
-@get("/")
-async def hello_world() -> dict[str, str]:
-    """Keeping the tradition alive with hello world."""
-    return {"hello": "world"}
+def create_app():
+    config = ConfigParser().app_cfg
 
+    name = config["name"]
+    secret = config["secret"]
 
-app = Litestar(route_handlers=[hello_world])
+    @get("/")
+    async def hello_world() -> dict[str, str]:
+        return {name: secret}
+
+    return Litestar(route_handlers=[hello_world])

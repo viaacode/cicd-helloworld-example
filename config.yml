@@ -1,0 +1,6 @@
+viaa:
+  logging:
+    level: DEBUG
+app:
+  "name": !ENV ${NAME}
+  "secret": !ENV ${SECRET}
