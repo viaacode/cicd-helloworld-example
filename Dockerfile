@@ -10,7 +10,7 @@ COPY --chown=appuser:appgroup . .
 
 # We install all our Python dependencies. Add the extra index url because some
 # packages are in the meemoo repo.
-RUN pip install git+https://github.com/viaacode/chassis.py.git \
+RUN pip install git+https://github.com/viaacode/chassis.py.git &&\
 pip install .
 
 USER appuser
