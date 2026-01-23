@@ -25,28 +25,25 @@ jobs:
     name: Lint / static checks / test code
     runs-on: [self-hosted]
     timeout-minutes: 45
-
+    permissions:
+      checks: write
+      pull-requests: write
+      # For private repos
+      contents: read
+      issues: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       # Select correct Python
       - name: Run tests
         run: make -f ./.github/Makefile test
-        # Publish JUnit
-      # - name: Publish JUnit report
-      #   if: always()
-      #   uses: mikepenz/action-junit-report@v5
-      #   with:
-      #     report_paths: tests/test_results.xml
-      #     fail_on_failure: false
-      #   # To where?
-      # - name: Upload test results artifact (if present)
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: test-results
-      #     path: tests/test_results.xml
-      #     if-no-files-found: ignore
+      # Publish JUnit tests
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          files: |
+            tests/test_results.xml
   build-and-push:
     runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
