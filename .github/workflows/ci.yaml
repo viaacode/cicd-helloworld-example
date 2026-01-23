@@ -58,15 +58,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Calculate short SHA
         run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      # - name: Login to Azure
-      #   uses: azure/login@v2
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      # - name: Login to ACR
-      #   shell: bash
-      #   run: az acr login --name ${{ env.ACR_NAME }}
       - name: Build and push to ACR
         uses: docker/build-push-action@v6
         with:
@@ -78,22 +69,13 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: lint-checks-test
     steps:
-      # - name: Login to Azure
-      #   uses: azure/login@v2
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      # - name: Login to ACR
-      #   shell: bash
-      #   run: az acr login --name ${{ env.ACR_NAME }}
       - name: Promote image to PRD tag (ACR)
         shell: bash
         run: |
           az acr import \
             --name "${{ env.ACR_NAME }}" \
             --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
-            --image "${{ env.IMAGE_NAME }}:${{github.ref.name}}" \
+            --image "${{ env.IMAGE_NAME }}:${{ github.ref.name }}" \
             --force
 
   change-image-tag:
@@ -107,8 +89,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Calculate short SHA
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Calculate image tag
+        run: |
+          REF="${{ github.ref }}"       # e.g. refs/heads/main OR refs/tags/v1.2.3
+          SHORT_SHA="${GITHUB_SHA::7}"  # Calculate short SHA
+
+          if [[ "$REF" == refs/tags/v* ]]; then
+            IMAGE_TAG="${{ github.ref.name }}"
+          elif [[ "$REF" == "refs/heads/main" || "$REF" == "refs/heads/release" ]]; then
+            IMAGE_TAG="$SHORT_SHA"
+          else
+            IMAGE_TAG="$SHORT_SHA"
+          fi
+          echo "tag=$IMAGE_TAG" >> "$GITHUB_ENV"
       - name: Checkout deployment repository
         uses: actions/checkout@v6
         with:
@@ -117,19 +110,19 @@ jobs:
           token: ${{ secrets.DEPLOYMENT_TOKEN }}
           ref: main
       - name: Update image tag in deployment.yaml
-        uses: mikefarah/yq@v4.49.2
+        uses: mikefarah/yq@v4
         with:
           cmd: |
             ls
             cd kustomize/${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}/${{ env.ENV_FOLDER }}
-            yq -i '.spec.template.spec.containers[0].image = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:'"${{ env.SHORT_SHA }}"'"' kustomization.yaml
+            yq -i '.spec.template.spec.containers[0].image = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" kustomization.yaml
       - name: Commit and push changes to deployment repository
         run: |
-          cd ${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}//${{ env.ENV_FOLDER }}
+          cd kustomize/${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}/${{ env.ENV_FOLDER }}
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add kustomization.yaml
-          git commit -m "Update ${{ github.event.repository.name }} image tag ${{ env.ENV_FOLDER }} to ${{ env.SHORT_SHA }}" || echo "No changes to commit"
+          git commit -m "Update ${{ github.event.repository.name }} image tag ${{ env.ENV_FOLDER }} to ${{ env.IMAGE_TAG }}" || echo "No changes to commit"
           git push origin main
       - name: Clean up
         run: |
