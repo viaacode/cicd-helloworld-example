@@ -1,0 +1,152 @@
+name: CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - release
+    tags:
+      - "v*.*.*"
+
+# Disable concurrent builds
+concurrency:
+  group: ${{ github.event.repository.name }} # Block for entire repo?
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ${{ github.event.repository.name }}
+  DEPLOYMENT_REPO_NAME: playground-k8s-resources # The repo with the Kustomize files for this application
+  # env folder based on branch or tag
+  ENV_FOLDER: ${{ github.ref == 'refs/heads/main' && 'int' || (github.ref == 'refs/heads/release' && 'qas' || (startsWith(github.ref, 'refs/tags/v') && 'prd')) }}
+  ACR_NAME: meeregistrymoo
+  ACR_LOGIN_SERVER: meeregistrymoo.azurecr.io # tmp location
+
+jobs:
+  lint-checks-test:
+    name: Lint / static checks / test code
+    runs-on:
+      group: default
+      labels: self-hosted
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run tests
+        run: make -f ./.github/Makefile test
+        # Publish JUnit
+      # - name: Publish JUnit report
+      #   if: always()
+      #   uses: mikepenz/action-junit-report@v5
+      #   with:
+      #     report_paths: tests/test_results.xml
+      #     fail_on_failure: false
+      #   # To where?
+      # - name: Upload test results artifact (if present)
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: test-results
+      #     path: tests/test_results.xml
+      #     if-no-files-found: ignore
+  build-and-push:
+    runs-on:
+      group: default
+      labels: self-hosted # if push to main or qas branch
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
+    needs: lint-checks-test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Calculate short SHA
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      # - name: Login to Azure
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # - name: Login to ACR
+      #   shell: bash
+      #   run: az acr login --name ${{ env.ACR_NAME }}
+      - name: Build and push to ACR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
+  promote-image:
+    runs-on:
+      group: default
+      labels: self-hosted
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: lint-checks-test
+    steps:
+      # - name: Login to Azure
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # - name: Login to ACR
+      #   shell: bash
+      #   run: az acr login --name ${{ env.ACR_NAME }}
+      - name: Promote image to PRD tag (ACR)
+        shell: bash
+        run: |
+          az acr import \
+            --name "${{ env.ACR_NAME }}" \
+            --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
+            --image "${{ env.IMAGE_NAME }}:${{github.ref.name}}" \
+            --force
+
+  change-image-tag:
+    runs-on:
+      group: default
+      labels: self-hosted
+    needs:
+      - build-and-push
+      - promote-image
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release' || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Calculate short SHA
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Checkout deployment repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.DEPLOYMENT_REPO_NAME }}
+          path: kustomize/${{ env.DEPLOYMENT_REPO_NAME }}
+          token: ${{ secrets.DEPLOYMENT_TOKEN }}
+          ref: main
+      - name: Update image tag in deployment.yaml
+        uses: mikefarah/yq@v4.49.2
+        with:
+          cmd: |
+            ls
+            cd kustomize/${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}/${{ env.ENV_FOLDER }}
+            yq -i '.spec.template.spec.containers[0].image = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:'"${{ env.SHORT_SHA }}"'"' kustomization.yaml
+      - name: Commit and push changes to deployment repository
+        run: |
+          cd ${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}//${{ env.ENV_FOLDER }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add kustomization.yaml
+          git commit -m "Update ${{ github.event.repository.name }} image tag ${{ env.ENV_FOLDER }} to ${{ env.SHORT_SHA }}" || echo "No changes to commit"
+          git push origin main
+      - name: Clean up
+        run: |
+          rm -rf ${{ env.DEPLOYMENT_REPO_NAME }}
