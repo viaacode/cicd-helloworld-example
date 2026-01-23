@@ -23,9 +23,7 @@ env:
 jobs:
   lint-checks-test:
     name: Lint / static checks / test code
-    runs-on:
-      group: default
-      labels: self-hosted
+    runs-on: [self-hosted]
     timeout-minutes: 45
 
     steps:
@@ -54,9 +52,7 @@ jobs:
       #     path: tests/test_results.xml
       #     if-no-files-found: ignore
   build-and-push:
-    runs-on:
-      group: default
-      labels: self-hosted # if push to main or qas branch
+    runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
     needs: lint-checks-test
     permissions:
@@ -85,9 +81,7 @@ jobs:
           push: true
           tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
   promote-image:
-    runs-on:
-      group: default
-      labels: self-hosted
+    runs-on: [self-hosted]
     if: startsWith(github.ref, 'refs/tags/v')
     needs: lint-checks-test
     steps:
@@ -110,9 +104,7 @@ jobs:
             --force
 
   change-image-tag:
-    runs-on:
-      group: default
-      labels: self-hosted
+    runs-on: [self-hosted]
     needs:
       - build-and-push
       - promote-image
