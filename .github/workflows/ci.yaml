@@ -69,6 +69,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: lint-checks-test
     steps:
+      - name: Compute SHORT_SHA
+        shell: bash
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - name: Promote image to PRD tag (ACR)
         shell: bash
         run: |
