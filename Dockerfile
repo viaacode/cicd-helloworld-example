@@ -15,6 +15,7 @@ RUN pip install . \
     --trusted-host do-prd-mvn-01.do.viaa.be
 
 USER appuser
+EXPOSE 8000
 
 # This command will be run when starting the container. It is the same one that can be used to run the application locally.
 CMD [ "python", "main.py"]
