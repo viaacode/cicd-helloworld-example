@@ -114,7 +114,7 @@ jobs:
           else
             IMAGE_TAG="$SHORT_SHA"
           fi
-          echo "tag=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
       - name: Checkout deployment repository
         uses: actions/checkout@v6
         with:
@@ -128,7 +128,7 @@ jobs:
           cmd: |
             ls
             cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
-            yq -i '.images[0].newTag = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"' kustomization.yaml
+            yq -i '.images[0].newTag = "${{ env.IMAGE_TAG }}"' kustomization.yaml
       - name: Commit and push changes to deployment repository
         run: |
           cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
