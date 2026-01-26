@@ -106,7 +106,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/${{ env.DEPLOYMENT_REPO_NAME }}
-          path: kustomize/${{ env.DEPLOYMENT_REPO_NAME }}
+          path: ${{ env.DEPLOYMENT_REPO_NAME }}
           token: ${{ secrets.DEPLOYMENT_TOKEN }}
           ref: main
       - name: Update image tag in deployment.yaml
@@ -114,8 +114,8 @@ jobs:
         with:
           cmd: |
             ls
-            cd kustomize/${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}/${{ env.ENV_FOLDER }}
-            yq -i '.spec.template.spec.containers[0].image = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" kustomization.yaml
+            cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
+            yq -i '.images[0].newTag = "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" kustomization.yaml
       - name: Commit and push changes to deployment repository
         run: |
           cd kustomize/${{ env.DEPLOYMENT_REPO_NAME }}/${{ github.event.repository.name }}/${{ env.ENV_FOLDER }}
