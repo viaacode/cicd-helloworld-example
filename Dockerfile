@@ -10,9 +10,8 @@ COPY --chown=appuser:appgroup . .
 
 # We install all our Python dependencies. Add the extra index url because some
 # packages are in the meemoo repo.
-RUN pip install . \
-    --extra-index-url http://do-prd-mvn-01.do.viaa.be:8081/repository/pypi-all/simple \
-    --trusted-host do-prd-mvn-01.do.viaa.be
+RUN pip install git+https://github.com/viaacode/chassis.py.git &&\
+pip install .
 
 USER appuser
 EXPOSE 8000
