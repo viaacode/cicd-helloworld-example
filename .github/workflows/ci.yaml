@@ -120,7 +120,6 @@ jobs:
         with:
           repository: ${{ github.repository_owner }}/${{ env.DEPLOYMENT_REPO_NAME }}
           path: ${{ env.DEPLOYMENT_REPO_NAME }}
-          token: ${{ secrets.DEPLOYMENT_TOKEN }}
           ref: main
       - name: Update image tag in deployment.yaml
         uses: mikefarah/yq@v4
