@@ -75,7 +75,7 @@ jobs:
           az acr import \
             --name "${{ env.ACR_NAME }}" \
             --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
-            --image "${{ env.IMAGE_NAME }}:${{ github.ref.name }}" \
+            --image "${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
             --force
 
   change-image-tag:
@@ -95,7 +95,7 @@ jobs:
           SHORT_SHA="${GITHUB_SHA::7}"  # Calculate short SHA
 
           if [[ "$REF" == refs/tags/v* ]]; then
-            IMAGE_TAG="${{ github.ref.name }}"
+            IMAGE_TAG="${{ github.ref_name }}"
           elif [[ "$REF" == "refs/heads/main" || "$REF" == "refs/heads/release" ]]; then
             IMAGE_TAG="$SHORT_SHA"
           else
