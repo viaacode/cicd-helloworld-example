@@ -50,6 +50,7 @@ jobs:
   pull-request-check-docker-build:
     runs-on: [self-hosted]
     if: github.event_name == 'pull_request'
+    needs: lint-checks-test
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
