@@ -59,12 +59,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
-          tags: ${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
-      - name: Cleanup - remove built image
+          outputs: type=cacheonly # No image artifact, no push
+      - name: Cleanup Buildx cache
         if: always()
-        run: |
-          docker rmi -f "${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" || true
+        run: docker buildx prune -f || true # Clears the build cache.
   build-and-push:
     runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
