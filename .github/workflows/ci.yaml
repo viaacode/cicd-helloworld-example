@@ -82,7 +82,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
+          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
   promote-image:
     runs-on: [self-hosted]
     if: startsWith(github.ref, 'refs/tags/v')
@@ -97,8 +97,8 @@ jobs:
         run: |
           az acr import \
             --name "${{ env.ACR_NAME }}" \
-            --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
-            --image "${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
+            --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
+            --image "${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
             --force
 
   change-image-tag:
