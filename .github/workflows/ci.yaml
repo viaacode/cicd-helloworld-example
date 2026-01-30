@@ -47,7 +47,8 @@ jobs:
             tests/test_results.xml
   # Test if Docker build works but don't push
   # This jobs runs only on PRs
-  pull-request-check-docker-build:
+  test-docker-build-pull-request:
+    name: Test if Docker image can be built
     runs-on: [self-hosted]
     if: github.event_name == 'pull_request'
     needs: lint-checks-test
