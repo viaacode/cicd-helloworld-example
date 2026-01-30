@@ -14,6 +14,7 @@ concurrency:
 
 env:
   IMAGE_NAME: ${{ github.event.repository.name }}
+  NAMESPACE: playground
   DEPLOYMENT_REPO_NAME: playground-k8s-resources # The repo with the Kustomize files for this application
   # env folder based on branch or tag
   ENV_FOLDER: ${{ github.ref == 'refs/heads/main' && 'int' || (github.ref == 'refs/heads/release' && 'qas' || (startsWith(github.ref, 'refs/tags/v') && 'prd')) }}
@@ -44,6 +45,24 @@ jobs:
         with:
           files: |
             tests/test_results.xml
+  # Test if Docker build works but don't push
+  # This jobs runs only on PRs
+  pull-request-check-docker-build:
+    runs-on: [self-hosted]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push to ACR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+      - name: Cleanup - remove built image
+        if: always()
+        run: |
+          docker rmi -f "${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" || true
   build-and-push:
     runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
