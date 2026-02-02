@@ -144,18 +144,10 @@ jobs:
           path: ${{ env.DEPLOYMENT_REPO_NAME }}
           token: ${{ secrets.DEPLOYMENT_TOKEN }}
           ref: main
-      - name: Update image tag in deployment.yaml
-        uses: mikefarah/yq@v4
-        with:
-          cmd: |
-            ls
-            cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
-            yq -i '.images[0].newTag = "${{ env.IMAGE_TAG }}"' kustomization.yaml
-      - name: Commit and push changes to deployment repository
+      - name: Update image tag in kustomization.yaml and push to config repository
         run: |
           cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          kustomize edit set image ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}={{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
           git add kustomization.yaml
           git commit -m "Update ${{ github.event.repository.name }} image tag ${{ env.ENV_FOLDER }} to ${{ env.IMAGE_TAG }}" || echo "No changes to commit"
           git push origin main
