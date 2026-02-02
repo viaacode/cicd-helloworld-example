@@ -13,12 +13,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: ${{ github.event.repository.name }}
+  IMAGE_NAME: playground/${{ github.event.repository.name }}
   DEPLOYMENT_REPO_NAME: playground-k8s-resources # The repo with the Kustomize files for this application
   # env folder based on branch or tag
   ENV_FOLDER: ${{ github.ref == 'refs/heads/main' && 'int' || (github.ref == 'refs/heads/release' && 'qas' || (startsWith(github.ref, 'refs/tags/v') && 'prd')) }}
   ACR_NAME: meeregistrymoo
-  ACR_LOGIN_SERVER: meeregistrymoo.azurecr.io # tmp location
+  ACR_REGISTRY: meeregistrymoo.azurecr.io # tmp location
 
 jobs:
   lint-checks-test:
@@ -44,6 +44,24 @@ jobs:
         with:
           files: |
             tests/test_results.xml
+  # Test if Docker build works but don't push
+  # This jobs runs only on PRs
+  test-docker-build-pull-request:
+    name: Test if Docker image can be built
+    runs-on: [self-hosted]
+    if: github.event_name == 'pull_request'
+    needs: lint-checks-test
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push to ACR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          outputs: type=cacheonly # No image artifact, no push
+      - name: Cleanup Buildx cache
+        if: always()
+        run: docker buildx prune -f --filter "until=168h"|| true # Clears the build cache.
   build-and-push:
     runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
@@ -63,7 +81,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
   promote-image:
     runs-on: [self-hosted]
     if: startsWith(github.ref, 'refs/tags/v')
@@ -78,7 +96,7 @@ jobs:
         run: |
           az acr import \
             --name "${{ env.ACR_NAME }}" \
-            --source "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
+            --source "${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
             --image "${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
             --force
 
