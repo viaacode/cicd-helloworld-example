@@ -61,7 +61,7 @@ jobs:
           outputs: type=cacheonly # No image artifact, no push
       - name: Cleanup Buildx cache
         if: always()
-        run: docker buildx prune -f || true # Clears the build cache.
+        run: docker buildx prune -f --filter "until=168h"|| true # Clears the build cache.
   build-and-push:
     runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
