@@ -13,8 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: ${{ github.event.repository.name }}
-  NAMESPACE: playground
+  IMAGE_NAME: playground/${{ github.event.repository.name }}
   DEPLOYMENT_REPO_NAME: playground-k8s-resources # The repo with the Kustomize files for this application
   # env folder based on branch or tag
   ENV_FOLDER: ${{ github.ref == 'refs/heads/main' && 'int' || (github.ref == 'refs/heads/release' && 'qas' || (startsWith(github.ref, 'refs/tags/v') && 'prd')) }}
@@ -82,7 +81,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.ACR_REGISTRY }}/${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
   promote-image:
     runs-on: [self-hosted]
     if: startsWith(github.ref, 'refs/tags/v')
@@ -97,8 +96,8 @@ jobs:
         run: |
           az acr import \
             --name "${{ env.ACR_NAME }}" \
-            --source "${{ env.ACR_REGISTRY }}/${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
-            --image "${{ env.NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
+            --source "${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
+            --image "${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
             --force
 
   change-image-tag:
