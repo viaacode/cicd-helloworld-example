@@ -140,7 +140,7 @@ jobs:
           app-id: ${{ env.APP_ID }}
           private-key: ${{ env.PRIVATE_KEY_PEM }}
           owner: viaacode
-          repositories: k8s-infra-ci-argocd-openbao-github
+          repositories: playground-config-repo
       - name: Checkout deployment repository
         uses: actions/checkout@v6
         with:
