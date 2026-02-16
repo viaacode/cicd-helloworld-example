@@ -26,6 +26,7 @@ jobs:
     runs-on: [self-hosted]
     timeout-minutes: 45
     permissions:
+      # As stated in documentation of the action publish-unit-test-result-action
       checks: write
       pull-requests: write
       # For private repos
@@ -68,7 +69,6 @@ jobs:
     needs: lint-checks-test
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -121,6 +121,7 @@ jobs:
       )
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
