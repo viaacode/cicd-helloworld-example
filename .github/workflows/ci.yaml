@@ -175,10 +175,9 @@ jobs:
         env:
           APP: ${{ env.DEPLOYMENT_REPO_NAME }}-${{ env.ENV_FOLDER }}
         run: |
-          argocd login "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web
-          argocd app sync "$APP" --revision "${{ env.SHA_DEPLOYMENT_REPO }}" --prune --async
-          argocd app wait "$APP" --sync --health --timeout 600
-          argocd app get "$APP"
+          argocd --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app sync "$APP" --revision "${{ env.SHA_DEPLOYMENT_REPO }}" --prune --async
+          argocd --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app wait "$APP" --operation --sync --health --timeout 600
+          argocd --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app get "$APP"
       - name: Clean up
         run: |
           rm -rf ${{ env.DEPLOYMENT_REPO_NAME }}
