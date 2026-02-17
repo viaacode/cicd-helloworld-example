@@ -140,7 +140,7 @@ jobs:
           app-id: ${{ env.GH_APP_ID }}
           private-key: ${{ env.PRIVATE_KEY_PEM }}
           owner: viaacode
-          repositories: playground-config-repo
+          repositories: ${{ env.DEPLOYMENT_REPO_NAME }}
       - name: Checkout deployment repository
         uses: actions/checkout@v6
         with:
