@@ -99,8 +99,8 @@ jobs:
             --source "${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}" \
             --image "${{ env.IMAGE_NAME }}:${{ github.ref_name }}" \
             --force
-
-  change-image-tag:
+  deploy-argocd:
+    name: Push new Docker image tag to deployment repo and manually sync corresponding ArgoCD application
     runs-on: [self-hosted]
     needs:
       - build-and-push
@@ -130,9 +130,9 @@ jobs:
           token: ${{ secrets.VAULT_TOKEN_INT }}
           role: argocd-ci
           secrets: |
-            kv-int/data/iam/github-app app_id | GH_APP_ID ;
-            kv-int/data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
-            kv-int/data/iam/argocd token | ARGOCD_AUTH_TOKEN
+            data/iam/github-app app_id | GH_APP_ID ;
+            data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
+            data/iam/argocd token | ARGOCD_AUTH_TOKEN
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v2
@@ -161,7 +161,6 @@ jobs:
             IMAGE_TAG="$SHORT_SHA"
           fi
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
-
       - name: Update image tag in kustomization.yaml and push to config repository
         run: |
           cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
