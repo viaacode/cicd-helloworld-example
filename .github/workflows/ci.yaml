@@ -14,7 +14,7 @@ concurrency:
 
 env:
   IMAGE_NAME: playground/${{ github.event.repository.name }}
-  DEPLOYMENT_REPO_NAME: playground-config-repo # The repo with the Kustomize files for this application
+  DEPLOYMENT_REPO_NAME: playground-deployment # The repo with the Kustomize files for this application
   # env folder based on branch or tag
   ENV_FOLDER: ${{ github.ref == 'refs/heads/main' && 'int' || (github.ref == 'refs/heads/release' && 'qas' || (startsWith(github.ref, 'refs/tags/v') && 'prd')) }}
   ACR_NAME: meeregistrymoo
@@ -130,9 +130,9 @@ jobs:
           token: ${{ secrets.VAULT_TOKEN_INT }}
           role: argocd-ci
           secrets: |
-            data/iam/github-app app_id | GH_APP_ID ;
-            data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
-            data/iam/argocd token | ARGOCD_AUTH_TOKEN
+            kv-int/data/iam/github-app app_id | GH_APP_ID ;
+            kv-int/data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
+            kv-int/data/iam/argocd token | ARGOCD_AUTH_TOKEN
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v2
