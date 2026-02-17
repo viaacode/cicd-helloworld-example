@@ -166,7 +166,7 @@ jobs:
           cd ${{ env.DEPLOYMENT_REPO_NAME }}/kustomize/${{ github.event.repository.name }}/overlays/${{ env.ENV_FOLDER }}
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          kustomize edit set image ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}={{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
+          kustomize edit set image ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}=${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
           git add kustomization.yaml
           git commit -m "Update ${{ github.event.repository.name }} image tag ${{ env.ENV_FOLDER }} to ${{ env.IMAGE_TAG }}" || echo "No changes to commit"
           git push origin main
