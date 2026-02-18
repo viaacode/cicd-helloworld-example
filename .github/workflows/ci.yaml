@@ -176,7 +176,7 @@ jobs:
           APP: ${{ github.event.repository.name }}-${{ env.ENV_FOLDER }}
         run: |
           # Sync will also pull git changes
-          argocd --loglevel debug --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app sync "$APP" --prune --timeout 600
+          argocd --loglevel debug --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app sync "$APP" --prune --timeout 900
       - name: Clean up
         run: |
           rm -rf ${{ env.DEPLOYMENT_REPO_NAME }}
