@@ -132,14 +132,13 @@ jobs:
           secrets: |
             kv-int/data/iam/github-app app_id | GH_APP_ID ;
             kv-int/data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
-            kv-int/data/iam/argocd token | ARGOCD_AUTH_TOKEN
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ env.GH_APP_ID }}
           private-key: ${{ env.PRIVATE_KEY_PEM }}
-          owner: viaacode
+          owner: ${{ github.repository_owner }}
           repositories: ${{ env.DEPLOYMENT_REPO_NAME }}
       - name: Checkout deployment repository
         uses: actions/checkout@v6
