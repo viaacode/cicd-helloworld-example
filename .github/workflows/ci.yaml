@@ -132,6 +132,8 @@ jobs:
           secrets: |
             kv-int/data/iam/github-app app_id | GH_APP_ID ;
             kv-int/data/iam/github-app private_key_pem | PRIVATE_KEY_PEM ;
+            kv-int/data/iam/argocd server | AROGCD_SERVER ;
+            kv-int/data/iam/github-app token | ARGOCD_SERVICE_ACCOUNT_TOKEN ;
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v2
@@ -175,7 +177,7 @@ jobs:
           APP: ${{ github.event.repository.name }}-${{ env.ENV_FOLDER }}
         run: |
           # Sync will also pull git changes
-          argocd --server "${{ secrets.ARGOCD_SERVER }}" --auth-token "${{ secrets.ARGOCD_AUTH_TOKEN_PLAYGROUND_INT }}" --grpc-web app sync "$APP" --prune --timeout 900
+          argocd --server "${{ env.ARGOCD_SERVER }}" --auth-token "${{ env.ARGOCD_SERVICE_ACCOUNT_TOKEN }}" --grpc-web app sync "$APP" --prune --timeout 900
       - name: Clean up
         run: |
           rm -rf ${{ env.DEPLOYMENT_REPO_NAME }}
