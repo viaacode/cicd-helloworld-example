@@ -23,7 +23,9 @@ env:
 jobs:
   lint-checks-test:
     name: Lint / static checks / test code
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
+      labels: [self-hosted]
     timeout-minutes: 45
     permissions:
       # As stated in documentation of the action publish-unit-test-result-action
