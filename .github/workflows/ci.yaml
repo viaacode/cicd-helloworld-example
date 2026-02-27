@@ -51,7 +51,9 @@ jobs:
   # This jobs runs only on PRs
   test-docker-build-pull-request:
     name: Test if Docker image can be built
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
+      labels: [self-hosted]
     if: github.event_name == 'pull_request'
     needs: lint-checks-test
     steps:
@@ -66,7 +68,9 @@ jobs:
         if: always()
         run: docker buildx prune -f --filter "until=168h"|| true # Clears the build cache.
   build-and-push:
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
+      labels: [self-hosted]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release'
     needs: lint-checks-test
     permissions:
@@ -85,7 +89,9 @@ jobs:
           push: true
           tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
   promote-image:
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
+      labels: [self-hosted]
     if: startsWith(github.ref, 'refs/tags/v')
     needs: lint-checks-test
     steps:
@@ -103,7 +109,9 @@ jobs:
             --force
   deploy-argocd:
     name: Push new Docker image tag to deployment repo and manually sync corresponding ArgoCD application
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
+      labels: [self-hosted]
     needs:
       - build-and-push
       - promote-image
